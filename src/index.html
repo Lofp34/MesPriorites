@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Priorités Semaine Pro - Gérez vos 3 priorités hebdomadaires avec moins de 45 secondes d'interaction quotidienne">
+    <meta name="keywords" content="productivité, priorités, pomodoro, focus, gamification">
+    <meta name="author" content="Priorités Semaine Pro">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Priorités Pro">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <title>🎯 Priorités Semaine Pro</title>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Priorités Semaine Pro",
+        "description": "Application de gestion de priorités hebdomadaires avec focus mode et gamification",
+        "url": "https://mes-priorites.vercel.app",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Any",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "EUR"
+        }
+    }
+    </script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        color: white;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    ">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">Priorités Semaine Pro</h1>
+        <p style="font-size: 1rem; opacity: 0.9;">Chargement de vos priorités...</p>
+        <div style="margin-top: 2rem;">
+            <div style="
+                width: 40px;
+                height: 40px;
+                border: 3px solid rgba(255,255,255,0.3);
+                border-radius: 50%;
+                border-top-color: white;
+                animation: spin 1s ease-in-out infinite;
+            "></div>
+        </div>
+        <style>
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+        </style>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="root"></div>
+
+    <!-- Offline Message -->
+    <div id="offline-message" style="
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: #ff6b6b;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        transform: translateY(100px);
+        transition: transform 0.3s ease;
+        z-index: 1000;
+        display: none;
+    ">
+        📱 Mode hors ligne activé - Vos données sont sauvegardées localement
+    </div>
+
+    <!-- Install PWA Prompt -->
+    <div id="install-prompt" style="
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
+        background: #4ecdc4;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 1000;
+    ">
+        <div>
+            <strong>📱 Installer l'app</strong><br>
+            <small>Accès rapide depuis votre écran d'accueil</small>
+        </div>
+        <button id="install-button" style="
+            background: white;
+            color: #4ecdc4;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+        ">Installer</button>
+        <button id="dismiss-install" style="
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-left: 1rem;
+        ">×</button>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Configuration globale
+        window.APP_CONFIG = {
+            name: "Priorités Semaine Pro",
+            version: "1.0.0",
+            apiUrl: null, // Pas d'API pour cette version
+            enableAnalytics: false,
+            maxInteractionTime: 45
+        };
+
+        // Gestion de l'état de l'application
+        window.addEventListener('load', () => {
+            // Masquer l'écran de chargement
+            setTimeout(() => {
+                const loadingScreen = document.getElementById('loading-screen');
+                if (loadingScreen) {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 300);
+                }
+            }, 1500);
+
+            // Vérifier l'état de connexion
+            updateOnlineStatus();
+        });
+
+        // Gestion hors ligne
+        function updateOnlineStatus() {
+            const offlineMessage = document.getElementById('offline-message');
+            if (!navigator.onLine) {
+                offlineMessage.style.display = 'block';
+                offlineMessage.style.transform = 'translateY(0)';
+            } else {
+                offlineMessage.style.transform = 'translateY(100px)';
+                setTimeout(() => {
+                    offlineMessage.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+
+        // Installation PWA
+        let deferredPrompt;
+        const installPrompt = document.getElementById('install-prompt');
+        const installButton = document.getElementById('install-button');
+        const dismissButton = document.getElementById('dismiss-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Afficher le prompt après 30 secondes
+            setTimeout(() => {
+                if (!localStorage.getItem('installPromptDismissed')) {
+                    installPrompt.style.display = 'flex';
+                }
+            }, 30000);
+        });
+
+        if (installButton) {
+            installButton.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    
+                    if (outcome === 'accepted') {
+                        console.log('PWA installée');
+                    }
+                    
+                    deferredPrompt = null;
+                    installPrompt.style.display = 'none';
+                }
+            });
+        }
+
+        if (dismissButton) {
+            dismissButton.addEventListener('click', () => {
+                installPrompt.style.display = 'none';
+                localStorage.setItem('installPromptDismissed', 'true');
+            });
+        }
+
+        // Analytics simple (sans tracking externe)
+        function logEvent(event, properties = {}) {
+            const eventData = {
+                timestamp: new Date().toISOString(),
+                event,
+                properties,
+                sessionId: sessionStorage.getItem('sessionId') || 'unknown'
+            };
+            
+            const events = JSON.parse(localStorage.getItem('appEvents') || '[]');
+            events.push(eventData);
+            
+            // Garder seulement les 100 derniers événements
+            if (events.length > 100) {
+                events.splice(0, events.length - 100);
+            }
+            
+            localStorage.setItem('appEvents', JSON.stringify(events));
+            
+            // Log en console pour debug
+            if (window.APP_CONFIG.enableAnalytics) {
+                console.log('Event:', event, properties);
+            }
+        }
+
+        // Session ID pour analytics
+        if (!sessionStorage.getItem('sessionId')) {
+            sessionStorage.setItem('sessionId', 
+                Date.now().toString(36) + Math.random().toString(36).substr(2));
+        }
+
+        // Log du démarrage de l'app
+        logEvent('app_start', {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            screen: {
+                width: screen.width,
+                height: screen.height
+            }
+        });
+
+        // Gestion des erreurs globales
+        window.addEventListener('error', (event) => {
+            logEvent('app_error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno
+            });
+        });
+
+        // Performance monitoring simple
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (performance.timing) {
+                    const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+                    logEvent('app_loaded', {
+                        loadTime: loadTime,
+                        performanceScore: loadTime < 3000 ? 'good' : loadTime < 5000 ? 'ok' : 'poor'
+                    });
+                }
+            }, 0);
+        });
+    </script>
+</body>
+</html> 
